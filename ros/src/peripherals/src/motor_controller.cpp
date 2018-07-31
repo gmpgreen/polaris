@@ -9,7 +9,11 @@
 #include "peripherals/motor_enums.h"
 #include "peripherals/rpms.h"
 #include "peripherals/get_motor_enums.h"
+#include "peripherals/tmp.h"
+#include "peripherals/hum.h"
 
+#define NUM_CHAR_HUM (1)
+#define NUM_CHAR_TMP (2)
 #define NUM_MOTORS (8)
 #define NUM_CHAR_PER_RPM (2)
 #define NUM_CHAR_PER_PWM (2)
@@ -43,6 +47,8 @@ public:
     bool stopAllMotors(MotorReq &, MotorRes &);
     bool getRPM(peripherals::rpms &rpms_msg);
     bool getMotorEnums(MotorEnumsReq &req, MotorEnumsRes &res);
+    bool getTMP(peripherals::tmp &tmp_msg);
+    bool getHUM(peripherals::hum &hum_msg);
 
 private:
     std::unique_ptr<serial::Serial> connection = nullptr;
@@ -164,6 +170,28 @@ bool motor_controller::getRPM(peripherals::rpms &rpms_msg)
     return true;
 }
 
+bool motor_controller::getTMP(peripherals::tmp &tmp_msg)
+{
+    std::string tmp_string = this->write("TMP", false);
+    if(tmp_string.size() != (NUM_CHAR_TMP + 2)){
+        return false;
+
+    tmp_msg.tmp.push_back(double(uint16_t(tmp_string[0] + tmp_string[1])));
+    }
+
+}
+
+bool motor_controller::getHUM(peripherals::hum &hum_msg)
+{
+    std::string hum_string = this->write("HUM", false);
+    if(hum_string.size() != (NUM_CHAR_HUM + 2)){
+        return false;
+
+    hum_msg.hum.push_back(uint8_t(hum_string[0]));
+    }
+
+}
+
 int main(int argc, char ** argv)
 {
     ros::init(argc, argv, "motor_con");
@@ -183,6 +211,10 @@ int main(int argc, char ** argv)
     motor_controller m(srv.response.device_fd);
     
     ros::Publisher rpm_pub = nh.advertise<peripherals::rpms>("MotorsRPMs", 1);
+    
+    ros::Publisher tmp_pub = nh.advertise<peripherals::tmp>("MotorTemp", 1);
+
+    ros::Publisher hum_pub = nh.advertise<peripherals::hum>("MotorHum", 1);
 
     /* Setup all the Different services/commands which we  can call. Each service does its own error handling */
     rosserv mr  = nh.advertiseService("setMotorPWM", &motor_controller::setMotorPWM, &m);
@@ -203,6 +235,11 @@ int main(int argc, char ** argv)
         {
             rpm_pub.publish(rpms_msg);
         }
+
+        //publish temp
+        peripherals::tmp tmp_msg;
+        m.getTMP(tmp_msg);
+        tmp_pub.publish(tmp_msg);
 
         ros::spinOnce();
         r.sleep();

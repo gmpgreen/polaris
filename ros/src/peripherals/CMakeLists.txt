@@ -27,6 +27,7 @@ add_service_files(
 
 add_message_files(
   FILES
+  hum.msg 		
   depth.msg
   powerboard.msg
   imu.msg
@@ -34,6 +35,7 @@ add_message_files(
   motor_enums.msg
   hydro.msg
   rpms.msg
+  tmp.msg	
 )
 
 ## Generate added messages and services with any dependencies listed here
