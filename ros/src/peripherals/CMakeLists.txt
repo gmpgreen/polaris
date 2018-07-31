@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(peripherals)
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 find_package(catkin REQUIRED COMPONENTS
   #message_generation
@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   serial
   monitor
+  dsp
   geometry_msgs
 )
 
@@ -21,6 +22,7 @@ add_service_files(
    avg_data.srv
    hydro_data.srv
    set_vel.srv
+   get_motor_enums.srv
 )
 
 add_message_files(
@@ -50,6 +52,7 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${dsp_INCLUDE_DIRS}
 )
 
 find_package(serial REQUIRED)
@@ -66,10 +69,13 @@ add_executable(power_board src/power_board.cpp)
 target_link_libraries(power_board ${catkin_LIBRARIES} ${serial_LIBRARIES})
 add_dependencies(power_board monitor_generate_messages_cpp peripherals_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
-add_executable(imu src/imu.cpp src/fir_filter.hpp src/fir_filter.cpp)
-target_link_libraries(imu ${catkin_LIBRARIES} ${serial_LIBRARIES})
+add_executable(imu src/imu.cpp)
+target_link_libraries(imu ${catkin_LIBRARIES} ${serial_LIBRARIES} ${dsp_LIBRARIES})
 add_dependencies(imu monitor_generate_messages_cpp peripherals_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 add_executable(hydrophones src/hydrophones.cpp)
 target_link_libraries(hydrophones ${catkin_LIBRARIES} ${serial_LIBRARIES})
 add_dependencies(hydrophones monitor_generate_messages_cpp peripherals_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+
+#add_executable(exec_name src/file.cpp)
+#target_link_libraries(exec_name -lfftw3)
